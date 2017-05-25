@@ -91,6 +91,44 @@
 
 //Recorder初始化以后调用
   function onRecorderReady() {
-    recorder.configure({onMp3Blob:(blob)=>console.log("onMp3Blob",blob)})
-    recorder.configure({onMp3Url:(url)=>console.log("onMp3Url",url)})
+    // recorder.configure({onMp3Blob:(blob)=>console.log("onMp3Blob",blob)})
+    // recorder.configure({onMp3Url:(url)=>console.log("onMp3Url",url)})
+    recorder.configure({onMp3Blob:_onMp3Blob})
+    recorder.configure({onMp3Url:_onMp3Url})
+  }
+
+  function _onMp3Blob(blob){//upload
+    var reader = new FileReader();
+    reader.onload = function(event){
+      var fd = new FormData();
+      var mp3Name = encodeURIComponent('audio_recording_' + new Date().getTime() + '.mp3');
+      console.log("mp3name = " + mp3Name);
+      fd.append('fname', mp3Name);
+      fd.append('data', event.target.result);
+      $.ajax({
+        type: 'POST',
+        url: 'upload.php',
+        data: fd,
+        processData: false,
+        contentType: false
+      }).done(function(data) {
+        //console.log(data);
+        log.innerHTML += "\n" + data;
+      });
+    };
+    reader.readAsDataURL(blob);
+  }
+
+  function _onMp3Url(url){//ui link
+      var li = document.createElement('li');
+        var au = document.createElement('audio');
+        var hf = document.createElement('a');
+        au.controls = true;
+        au.src = url;
+        hf.href = url;
+        hf.download = 'audio_recording_' + new Date().getTime() + '.mp3';
+        hf.innerHTML = hf.download;
+        li.appendChild(au);
+        li.appendChild(hf);
+        recordingslist.appendChild(li);
   }
