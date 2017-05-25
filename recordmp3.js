@@ -4,7 +4,10 @@
   var encoderWorker = new Worker('js/mp3Worker.js');
 
   var Recorder = function(source, cfg){
-    var config = cfg || {};
+    var config = cfg || {
+    	recordingslist:document.getElementById("recordingslist"),
+    	uploadUrl:null //'/upload.php'
+	};
     var bufferLen = config.bufferLen || 4096;
     var numChannels = config.numChannels || 2;
     this.context = source.context;
@@ -122,7 +125,7 @@
 				hf.innerHTML = hf.download;
 				li.appendChild(au);
 				li.appendChild(hf);
-				recordingslist.appendChild(li);
+				cfg.recordingslist.appendChild(li);
 
             }
         };
@@ -178,6 +181,9 @@
 	}
 
 	function uploadAudio(mp3Data){
+		if(!cfg.uploadUrl){
+			return;
+		}
 		var reader = new FileReader();
 		reader.onload = function(event){
 			var fd = new FormData();
@@ -187,7 +193,7 @@
 			fd.append('data', event.target.result);
 			$.ajax({
 				type: 'POST',
-				url: 'upload.php',
+				url: cfg.uploadUrl,
 				data: fd,
 				processData: false,
 				contentType: false

@@ -41,7 +41,9 @@
     __log('Input connected to audio context destination.');
 
     recorder = new Recorder(input, {
-                  numChannels: 1
+                  numChannels: 1,
+                  recordingslist:document.getElementById("recordingslist"),
+                  uploadUrl:"/upload.asp"
                 });
     __log('Recorder initialised.');
   }
