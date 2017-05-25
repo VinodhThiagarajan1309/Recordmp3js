@@ -1,3 +1,6 @@
+  var audio_context;
+  var recorder;
+
   function __log(e, data) {
     log.innerHTML += "\n" + e + " " + (data || '');
   }
@@ -15,13 +18,16 @@
 
     recorder = new Recorder(input, {
                   numChannels: 1,
-                  recordingslist:document.getElementById("recordingslist"),
-                  uploadUrl:"/upload.asp"
+                  callback:function(wavBlob){}
+                  // onMp3Blob:onMp3Blob,
+                  // onMp3Url:onMp3Url
                 });
     __log('Recorder initialised.');
+    window.onRecorderReady && window.onRecorderReady();
   }
 
   function startRecording(button) {
+    // recorder.connect();
     recorder && recorder.record();
     button.disabled = true;
     button.nextElementSibling.disabled = false;
@@ -30,14 +36,14 @@
 
   function stopRecording(button) {
     recorder && recorder.stop();
+    // recorder.disconnect();
     button.disabled = true;
     button.previousElementSibling.disabled = false;
     __log('Stopped recording.');
 
     // create WAV download link using audio data blob
-    createDownloadLink();
-
-    recorder.clear();
+    // createDownloadLink();//收集缓冲区数据->wav->mp3。
+    // recorder.clear();//清除缓冲区数据
   }
 
   function createDownloadLink() {
@@ -58,7 +64,7 @@
     });
   }
 
-  window.onload = function init() {
+  function init() {
     try {
       // webkit shim
       window.AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -79,3 +85,12 @@
       __log('No live audio input: ' + e);
     });
   };
+
+  $(init)
+
+
+//Recorder初始化以后调用
+  function onRecorderReady() {
+    recorder.configure({onMp3Blob:(blob)=>console.log("onMp3Blob",blob)})
+    recorder.configure({onMp3Url:(url)=>console.log("onMp3Url",url)})
+  }

@@ -5,8 +5,7 @@
 
   var Recorder = function(source, cfg){
     var config = cfg || {
-    	recordingslist:document.getElementById("recordingslist"),
-    	uploadUrl:null //'/upload.php'
+    	callback:function(wavBlob){}
 	};
     var bufferLen = config.bufferLen || 4096;
     var numChannels = config.numChannels || 2;
@@ -22,10 +21,12 @@
         numChannels: numChannels
       }
     });
-    var recording = false,
-      currCallback;
+    var currCallback;
+    var recording = false;
 
     this.node.onaudioprocess = function(e){
+    	console.log("onaudioprocess")
+      //一直在执行。
       if (!recording) return;
       var buffer = [];
       for (var channel = 0; channel < numChannels; channel++){
@@ -46,11 +47,15 @@
     }
 
     this.record = function(){
+      this.connect();
       recording = true;
     }
 
     this.stop = function(){
       recording = false;
+      this.disconnect();
+      this.exportWAV();//收集缓冲区数据->wav->mp3。
+      this.clear();//清除缓冲区数据
     }
 
     this.clear = function(){
@@ -102,30 +107,37 @@
             if (e.data.cmd == 'data') {
 
 				console.log("Done converting to Mp3");
-				log.innerHTML += "\n" + "Done converting to Mp3";
-
+				// log.innerHTML += "\n" + "Done converting to Mp3";
+				if(config.onMp3Blob){
+					var mp3Blob = new Blob([new Uint8Array(e.data.buf)], {type: 'audio/mp3'});
+					config.onMp3Blob(mp3Blob);
+				}
+				if(config.onMp3Url){
+					var url = 'data:audio/mp3;base64,'+encode64(e.data.buf);
+					config.onMp3Url(url);
+				}
 				/*var audio = new Audio();
 				audio.src = 'data:audio/mp3;base64,'+encode64(e.data.buf);
 				audio.play();*/
 
 				//console.log ("The Mp3 data " + e.data.buf);
 
-				var mp3Blob = new Blob([new Uint8Array(e.data.buf)], {type: 'audio/mp3'});
-				uploadAudio(mp3Blob);
+				// var mp3Blob = new Blob([new Uint8Array(e.data.buf)], {type: 'audio/mp3'});
+				// uploadAudio(mp3Blob);
 
-				var url = 'data:audio/mp3;base64,'+encode64(e.data.buf);
-				var li = document.createElement('li');
-				var au = document.createElement('audio');
-				var hf = document.createElement('a');
+				// var url = 'data:audio/mp3;base64,'+encode64(e.data.buf);
+				// var li = document.createElement('li');
+				// var au = document.createElement('audio');
+				// var hf = document.createElement('a');
 
-				au.controls = true;
-				au.src = url;
-				hf.href = url;
-				hf.download = 'audio_recording_' + new Date().getTime() + '.mp3';
-				hf.innerHTML = hf.download;
-				li.appendChild(au);
-				li.appendChild(hf);
-				cfg.recordingslist.appendChild(li);
+				// au.controls = true;
+				// au.src = url;
+				// hf.href = url;
+				// hf.download = 'audio_recording_' + new Date().getTime() + '.mp3';
+				// hf.innerHTML = hf.download;
+				// li.appendChild(au);
+				// li.appendChild(hf);
+				// recordingslist.appendChild(li);
 
             }
         };
@@ -205,8 +217,16 @@
 		reader.readAsDataURL(mp3Data);
 	}
 
-    source.connect(this.node);
-    this.node.connect(this.context.destination);    //this should not be necessary
+	this.connect=function(){
+		source.connect(this.node);
+    	this.node.connect(this.context.destination);    //this should not be necessary
+	}
+
+	this.disconnect=function(){
+		source.disconnect(this.node);
+    	this.node.disconnect(this.context.destination);    //this should not be necessary
+	}
+
   };
 
   /*Recorder.forceDownload = function(blob, filename){
